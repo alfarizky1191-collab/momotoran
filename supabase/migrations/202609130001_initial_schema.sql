@@ -17,3 +17,42 @@ create policy "members read their groups" on public.touring_groups for select to
 create policy "members read group membership" on public.group_members for select to authenticated using (public.is_group_member(group_id)); create policy "users leave a group" on public.group_members for delete to authenticated using (user_id = auth.uid() and role <> 'leader');
 create policy "members read group locations" on public.live_locations for select to authenticated using (public.is_group_member(group_id)); create policy "members insert own location" on public.live_locations for insert to authenticated with check (user_id = auth.uid() and public.is_group_member(group_id)); create policy "members update own location" on public.live_locations for update to authenticated using (user_id = auth.uid() and public.is_group_member(group_id)) with check (user_id = auth.uid() and public.is_group_member(group_id)); create policy "users delete own location" on public.live_locations for delete to authenticated using (user_id = auth.uid());
 alter publication supabase_realtime add table public.live_locations;
+
+-- Restrict internal helpers and profile visibility before exposing the API.
+create schema if not exists private;
+revoke all on schema private from public;
+grant usage on schema private to authenticated;
+alter function public.handle_new_user() set schema private;
+alter function public.add_group_owner() set schema private;
+alter function public.is_group_member(uuid) set schema private;
+revoke all on function private.handle_new_user() from public, anon, authenticated;
+revoke all on function private.add_group_owner() from public, anon, authenticated;
+revoke all on function private.is_group_member(uuid) from public, anon;
+grant execute on function private.is_group_member(uuid) to authenticated;
+
+drop policy "profiles readable by authenticated users" on public.profiles;
+create policy "read own or group member profile" on public.profiles for select to authenticated
+using (id = (select auth.uid()) or exists (
+  select 1 from public.group_members gm
+  where gm.user_id = profiles.id and private.is_group_member(gm.group_id)
+));
+-- The owner must be able to read INSERT RETURNING before membership visibility settles.
+alter policy "members read their groups" on public.touring_groups
+using (owner_id = (select auth.uid()) or private.is_group_member(id));
+
+alter table public.live_locations add constraint location_membership_fk
+foreign key (group_id, user_id) references public.group_members(group_id, user_id) on delete cascade;
+create index touring_groups_owner_idx on public.touring_groups(owner_id);
+create index live_locations_user_idx on public.live_locations(user_id);
+
+revoke all on public.profiles, public.touring_groups, public.group_members, public.live_locations from anon, authenticated;
+grant select, update on public.profiles to authenticated;
+grant select, insert, update on public.touring_groups to authenticated;
+grant select, delete on public.group_members to authenticated;
+grant select, insert, update, delete on public.live_locations to authenticated;
+revoke execute on function public.join_touring_group(text) from anon;
+
+-- Support accounts created before this migration.
+insert into public.profiles(id, display_name)
+select id, left(coalesce(nullif(trim(raw_user_meta_data->>'display_name'), ''), 'Pengendara'), 60)
+from auth.users on conflict (id) do nothing;
