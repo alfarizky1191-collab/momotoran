@@ -1,35 +1,28 @@
-# Uji Momotoran di dua HP Android
+# Build dan uji Android Momotoran
 
-Status: pemeriksaan TypeScript dan bundling Android dapat dijalankan di workspace. GPS, render peta native, login email, dan komunikasi dua HP belum diuji pada perangkat fisik. Export bundle bukan APK.
+Background tracking memerlukan development build atau APK mandiri. Expo Go bukan target uji fitur ini.
 
-## Jalankan dari laptop
+## Konfigurasi yang dibutuhkan
+1. Login akun Expo/EAS pada laptop. Hubungkan project Momotoran melalui EAS CLI.
+2. Aktifkan Google Maps SDK for Android, buat key yang dibatasi package id.my.momotoran dan SHA-1 signing certificate build.
+3. Isi EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY (publishable key), dan GOOGLE_MAPS_ANDROID_API_KEY di environment build. Jangan memasukkan nilainya ke Git.
+4. Dari repo, jalankan npm ci. Untuk APK pengujian, jalankan npx eas-cli build --platform android --profile preview. Selesaikan pemilihan project/signing di akun sendiri.
+5. Pasang APK yang dihasilkan pada dua HP. Preview APK memuat bundle, sehingga tidak membutuhkan Metro laptop.
+6. Development build alternatif: npx eas-cli build --platform android --profile development lalu npx expo start --dev-client.
 
-1. Pasang Node.js 22.13 atau lebih baru dan Git.
-2. Clone repo, atau jalankan git pull jika sudah ada.
+Di workspace saat ini belum tersedia Android SDK, akses Expo/EAS, atau Maps key; APK belum dibangun. Android native prebuild dan export bundle sudah lulus, tetapi keduanya bukan APK.
 
-   git clone https://github.com/alfarizky1191-collab/momotoran.git
-   cd momotoran
-   npm ci
-
-3. Salin .env.example ke .env. Isi EXPO_PUBLIC_SUPABASE_URL dan EXPO_PUBLIC_SUPABASE_ANON_KEY dari dialog Connect di dashboard Supabase. Variabel ANON_KEY menerima publishable key. Jangan memakai service_role atau secret key. Konfigurasi lokal workspace ChatGPT tidak otomatis ada di laptop.
-4. Jalankan npm start. Hubungkan laptop dan kedua HP ke jaringan Wi-Fi yang sama.
-5. Buka menggunakan Expo Go yang mendukung SDK 57 dan pindai QR Metro. Jika versi Expo Go tidak mendukung SDK 57, gunakan development build yang sesuai; jangan mengganti versi dependency satu per satu.
-
-## Skenario perangkat (belum dijalankan)
-
-- Daftarkan dua akun yang berbeda. Konfirmasi email jika diminta, lalu login manual.
-- HP A membuat grup; bagikan kode melalui tombol Bagikan kode grup. HP B bergabung.
-- Pastikan kedua nama tampil dan pembuat ditandai Leader.
-- Mulai lokasi di kedua HP saat berhenti di tempat aman. Izinkan lokasi. Periksa marker dan akurasi.
-- Tolak izin lokasi lalu coba lagi: aplikasi harus menampilkan pesan dan tombol tetap bisa dipakai.
-- Putus internet saat mengirim: pesan posisi belum terkirim harus muncul. Sambungkan kembali dan tunggu pembaruan GPS berikutnya.
-- Tekan Berhenti & hapus posisi: GPS berhenti dan posisi di HP lain hilang setelah sinkronisasi (maksimal sekitar 10 detik pada koneksi sehat). Jika hapus gagal, pesan menjelaskan posisi terakhir masih tersimpan.
-- Kunci HP: foreground tracking dijeda. Buka aplikasi dan tekan Mulai untuk melanjutkan. Posisi lama tetap ditandai dengan umur data; marker abu-abu setelah 60 detik.
-- Tekan Kembali: hentikan GPS dan hapus posisi sebelum kembali ke grup.
-- Pindahkan peta manual: pembaruan GPS tidak menarik peta kembali berulang kali.
-
-## Batasan
-
-Belum ada APK atau background tracking. Belum ada uji ketahanan baterai. Snapshot grup diperiksa setiap 10 detik untuk menangani penghapusan posisi dan perubahan anggota, selain Realtime. Posisi yang tersimpan dari aplikasi yang mati mendadak belum mempunyai proses penghapusan terjadwal. Kode undangan belum mempunyai pembatasan percobaan; jangan gunakan rilis ini untuk berbagi lokasi sensitif secara luas.
-
-Build Android mandiri membutuhkan konfigurasi Google Maps Android yang dibatasi package/signing certificate dan akun Expo/EAS jika memakai cloud build. Tidak ada Maps key atau signing credential di Git.
+## Uji wajib di tempat aman
+- Login dengan dua akun berbeda; buat grup dan join menggunakan kode baru 16 karakter.
+- Tekan Mulai dan izinkan lokasi sepanjang waktu. Pastikan notifikasi Momotoran tampil.
+- Kunci layar HP A selama 10–15 menit sambil berpindah tempat; HP B harus menerima posisi yang terus diperbarui.
+- Uji lebih dari satu jam untuk memeriksa pembaruan sesi login di background.
+- Kembali ke daftar grup: tracking tetap berjalan. Buka grup untuk menghentikan.
+- Putus internet lalu sambungkan kembali: posisi terbaru dikirim, tanpa memutar ulang titik lama.
+- Tekan Berhenti saat pengiriman berlangsung: request tidak menahan UI tanpa batas; posisi lama harus dihapus setelah tersambung.
+- Force-stop dan restart HP: jangan mengharapkan tracking terus berjalan. Buka aplikasi dan mulai lagi. Periksa umur posisi di HP lain.
+- Setelah dua menit tanpa update, lokasi hilang dari anggota lain; penghapusan fisik menyusul pada cron berikutnya.
+- Uji izin ditolak, GPS dimatikan, baterai hemat, dan pengaturan baterai vendor. Jika perlu, izinkan penggunaan baterai tidak dibatasi untuk Momotoran.
+- Leader mengeluarkan anggota: akses lokasi terputus dan kode undangan lama tidak berlaku.
+- Selesaikan touring: lokasi dihapus dan unggahan baru ditolak server.
+- Pastikan tidak ada credential di perubahan Git sebelum push.

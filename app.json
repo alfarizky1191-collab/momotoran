@@ -7,7 +7,13 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "plugins": [["expo-location", {"locationWhenInUsePermission": "Izinkan Momotoran memakai lokasi agar teman satu grup dapat melihat posisi Anda saat touring."}]],
+    "plugins": [["expo-location", {
+      "locationWhenInUsePermission": "Bagikan posisi kepada grup saat touring.",
+      "locationAlwaysAndWhenInUsePermission": "Bagikan posisi saat touring, termasuk ketika layar terkunci.",
+      "isAndroidBackgroundLocationEnabled": true,
+      "isAndroidForegroundServiceEnabled": true,
+      "isIosBackgroundLocationEnabled": true
+    }]],
     "ios": {
       "bundleIdentifier": "id.my.momotoran",
       "supportsTablet": true

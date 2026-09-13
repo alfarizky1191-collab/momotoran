@@ -1,27 +1,31 @@
 # Momotoran
 
-Android-first group touring app built with Expo, React Native, TypeScript, and Supabase.
+Aplikasi touring Android: login, grup privat, peta anggota, dan tracking background dengan Expo SDK 57 + Supabase.
 
-## MVP scope
-- Email/password registration and login
-- Create a touring group
-- Join with a six-character invite code
-- See group members on a map in real time
-- Explicitly start and stop foreground location sharing
+## Perilaku tracking
+- Tekan Mulai dan berikan izin lokasi sepanjang waktu. Android menampilkan notifikasi foreground service.
+- Layar terkunci atau kembali ke daftar grup tidak menghentikan tracking.
+- Tekan Berhenti untuk mengakhiri; keluar akun juga menghentikan layanan.
+- Force-stop, restart HP, atau pembatasan baterai vendor dapat menghentikan tracking. Uji perangkat fisik diperlukan.
+- Request dibatasi 12 detik; antrean hanya menyimpan satu titik terbaru.
+- Penghapusan posisi yang gagal disimpan sebagai pekerjaan lokal dan dicoba lagi. Posisi tidak diperbarui selama dua menit disembunyikan dari anggota lain; cron menghapus baris kedaluwarsa setiap menit.
+- Posisi dari HP dengan jam melenceng dapat ditolak. Gunakan waktu otomatis perangkat.
 
-## Local setup
-1. Create a Supabase project.
-2. Run `supabase/migrations/202609130001_initial_schema.sql` in the Supabase SQL editor.
-3. Copy `.env.example` to `.env` and fill in the project URL and anon key.
-4. Run `npm install` and `npm start`.
-5. Open the project in Expo Go on Android for foreground location testing.
+## Keamanan grup
+Kode baru terdiri dari 16 karakter heksadesimal dan berlaku tujuh hari. Maksimal lima percobaan join per akun per 15 menit. Leader dapat mengganti kode, mengeluarkan anggota (kode ikut diganti), atau menyelesaikan touring. Anggota dapat keluar sendiri. RLS tetap membatasi akses grup. Rate limit per akun belum menjadi perlindungan terhadap banyak akun penyerang.
 
-Never use a `service_role` key in the mobile app. The first milestone tracks location while the app is open, every eight seconds or after roughly 20 meters. Background tracking requires an Expo development build and is deliberately deferred until foreground tracking is verified on real devices.
+Dua RPC SECURITY DEFINER sengaja diizinkan untuk authenticated; keduanya memeriksa caller dan izin operasi. private.join_attempts sengaja tidak memiliki policy akses client. Catatan ini menjelaskan advisory yang masih muncul, bukan klaim bebas risiko.
 
-## Backend verification (2026-09-13)
+## Setup
+Salin .env.example ke .env dan isi konfigurasi Supabase. Jangan commit nilai konfigurasi, password, service_role, atau signing key. ANON_KEY menerima publishable key.
+Migration awal dan touring_hardening sudah diterapkan ke project terhubung. Jangan menjalankan ulang di sana.
 
-The initial schema is deployed to the connected Momotoran Supabase project; do not rerun it there. All four tables have RLS enabled. Transactional tests passed for group/profile/location isolation, denied outsider writes, joining by code, and denied updates to another member's location. Test accounts were rolled back.
+Lihat [panduan Android](docs/ANDROID-TEST.md) untuk build dan pengujian.
+npm ci
+npm run typecheck
+node --test tests/tracking.cjs
 
-The security advisor flags `join_touring_group` as an authenticated SECURITY DEFINER RPC. This is intentional: it validates the caller and invitation code, and inserts only that caller's membership. Internal helpers are in the private schema. Invitation attempt rate limiting remains a production hardening task.
-
-Local configuration uses a publishable key in the existing `EXPO_PUBLIC_SUPABASE_ANON_KEY` variable for compatibility. No actual configuration values are committed. Mobile login, confirmation emails, two-device GPS/Realtime, and background tracking still require device verification; database tests are not an end-to-end app test.
+## Verifikasi
+Lulus: TypeScript, 3 tes unit tracking dengan mock native, export bundle Android, native prebuild dan izin manifest, serta tes SQL transaksional join/rate limit/otorisasi/remove/rotasi kode/penolakan lokasi setelah selesai.
+Belum diuji: APK fisik, login email dua perangkat, lokasi saat layar terkunci, ketahanan baterai, refresh sesi auth setelah satu jam, dan pembatasan baterai vendor.
+Belum tersedia: alur lupa password dan rilis Play Store. Pengujian mock bukan bukti bahwa GPS berjalan pada HP nyata.
