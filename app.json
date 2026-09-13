@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Momotoran",
-    "slug": "momotoran",
+    "slug": "al135",
     "version": "1.0.0",
     "scheme": "momotoran",
     "orientation": "portrait",
@@ -40,6 +40,7 @@
       "eas": {
         "projectId": "65a4d8e9-0cd0-43be-a5f1-45877ed3c1eb"
       }
-    }
+    },
+    "owner": "alfa135s-team"
   }
 }
