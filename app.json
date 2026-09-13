@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Momotoran",
+    "slug": "momotoran",
+    "version": "1.0.0",
+    "scheme": "momotoran",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "plugins": [["expo-location", {"locationWhenInUsePermission": "Izinkan Momotoran memakai lokasi agar teman satu grup dapat melihat posisi Anda saat touring."}]],
+    "ios": {
+      "bundleIdentifier": "id.my.momotoran",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "id.my.momotoran",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
